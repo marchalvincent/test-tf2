@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script to bootstrap Azure DevOps project using Terraform
-# Usage: ./bootstrap.sh --ado-token <token>
+# Usage: ./bootstrap.sh --ado-token <token> --project-name <name> --repository-name <name>
 
 set -e  # Exit on any error
 
@@ -22,14 +22,18 @@ fi
 
 # Initialize variables
 ADO_PAT=""
+PROJECT_NAME=""
+REPOSITORY_NAME=""
 
 # Function to display usage
 usage() {
-    echo "Usage: $0 --ado-token <token>"
+    echo "Usage: $0 --ado-token <token> --project-name <name> --repository-name <name>"
     echo ""
     echo "Options:"
     echo "  --ado-token <token>      Azure DevOps Personal Access Token (required)"
-    echo "  -h, --help              Show this help message"
+    echo "  --project-name <name>    Azure DevOps Project Name (required)"
+    echo "  --repository-name <name> Azure DevOps Repository Name (required)"
+    echo "  -h, --help               Show this help message"
     exit 1
 }
 
@@ -38,6 +42,14 @@ while [[ $# -gt 0 ]]; do
     case $1 in
         --ado-token)
             ADO_PAT="$2"
+            shift 2
+            ;;
+        --project-name)
+            PROJECT_NAME="$2"
+            shift 2
+            ;;
+        --repository-name)
+            REPOSITORY_NAME="$2"
             shift 2
             ;;
         -h|--help)
@@ -56,6 +68,16 @@ if [ -z "$ADO_PAT" ]; then
     usage
 fi
 
+if [ -z "$PROJECT_NAME" ]; then
+    echo "❌ Error: Project name (--project-name) is required"
+    usage
+fi
+
+if [ -z "$REPOSITORY_NAME" ]; then
+    echo "❌ Error: Repository name (--repository-name) is required"
+    usage
+fi
+
 # Change to the project directory where terraform files are located
 cd "$(dirname "$0")/project"
 
@@ -63,7 +85,7 @@ echo "🔄 Initializing Terraform..."
 terraform init
 
 echo "🔄 Applying Terraform configuration..."
-terraform apply -var="ado_token=$ADO_PAT" -auto-approve
+terraform apply -var="ado_token=$ADO_PAT" -var="project_name=$PROJECT_NAME" -var="repository_name=$REPOSITORY_NAME" -auto-approve
 
 echo "✅ Azure DevOps project has been created and configured."
 
